@@ -5,7 +5,11 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Invoice;
 use App\Models\Order;
+use App\Models\Customer;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Support\Facades\Mail;
+use App\Mail\InvoiceMailable; // Pastikan Anda sudah membuat Mailable ini
+
 class InvoiceController extends Controller
 {
     /**
@@ -37,17 +41,17 @@ class InvoiceController extends Controller
             'due_date' => 'required|date',
         ]);
 
-        Invoice::create($validated);
+        // Membuat Invoice baru
+        $invoice = Invoice::create($validated);
+
+        // Mendapatkan order dan customer terkait
+        $order = Order::find($invoice->order_id);  // Gunakan $invoice untuk mengambil order_id
+        $customer = $order->customer;  // Relasi ke Customer
+
+        // Mengirim email dengan invoice PDF
+        Mail::to($customer->email)->send(new InvoiceMailable($invoice));
 
         return redirect()->route('invoices.index')->with('success', 'Invoice created successfully.');
-    }
-
-    /**
-     * Display the specified resource.
-     */
-    public function show(string $id)
-    {
-        //
     }
 
     /**
@@ -56,6 +60,7 @@ class InvoiceController extends Controller
     public function edit(string $id)
     {
         $orders = Order::all();
+        $invoice = Invoice::findOrFail($id);
         return view('invoices.edit', compact('invoice', 'orders'));
     }
 
@@ -70,6 +75,7 @@ class InvoiceController extends Controller
             'due_date' => 'required|date',
         ]);
 
+        $invoice = Invoice::findOrFail($id);
         $invoice->update($validated);
 
         return redirect()->route('invoices.index')->with('success', 'Invoice updated successfully.');
@@ -80,11 +86,15 @@ class InvoiceController extends Controller
      */
     public function destroy(string $id)
     {
+        $invoice = Invoice::findOrFail($id);
         $invoice->delete();
 
         return redirect()->route('invoices.index')->with('success', 'Invoice deleted successfully.');
     }
 
+    /**
+     * Toggle invoice status.
+     */
     public function toggleStatus(Invoice $invoice)
     {
         $invoice->status = !$invoice->status;
@@ -93,6 +103,9 @@ class InvoiceController extends Controller
         return redirect()->route('invoices.index')->with('success', 'Invoice status updated.');
     }
 
+    /**
+     * Download invoice as PDF.
+     */
     public function downloadInvoice(Invoice $invoice)
     {
         $pdf = Pdf::loadView('invoices.pdf', compact('invoice'));
