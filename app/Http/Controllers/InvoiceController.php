@@ -41,17 +41,20 @@ class InvoiceController extends Controller
             'due_date' => 'required|date',
         ]);
 
-        // Membuat Invoice baru
+        // Buat Invoice baru
         $invoice = Invoice::create($validated);
 
-        // Mendapatkan order dan customer terkait
-        $order = Order::find($invoice->order_id);  // Gunakan $invoice untuk mengambil order_id
-        $customer = $order->customer;  // Relasi ke Customer
+        // Ambil informasi customer dari order terkait
+        $order = $invoice->order;
+        $customer = $order->customer;
+        // Generate PDF Invoice
+        $pdf = Pdf::loadView('invoices.pdf', compact('invoice'));
+        $pdfContent = $pdf->output();
 
-        // Mengirim email dengan invoice PDF
+        // Kirim email dengan lampiran PDF
         Mail::to($customer->email)->send(new InvoiceMailable($invoice));
 
-        return redirect()->route('invoices.index')->with('success', 'Invoice created successfully.');
+        return redirect()->route('invoices.index')->with('success', 'Invoice created and email sent successfully.');
     }
 
     /**
