@@ -5,7 +5,10 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Receipt;
 use App\Models\Invoice;
+use App\Models\Customer;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Support\Facades\Mail;
+use App\Mail\ReceiptMailable;
 
 class ReceiptController extends Controller
 {
@@ -37,24 +40,23 @@ class ReceiptController extends Controller
             'payment_date' => 'required|date',
         ]);
 
-        $invoice = Invoice::with('order')->findOrFail($request->invoice_id);
+        $invoice = Invoice::with('order.customer')->findOrFail($request->invoice_id);
 
-        // Use total_price from the related order
         $receipt = Receipt::create([
             'invoice_id' => $validated['invoice_id'],
             'payment_date' => $validated['payment_date'],
             'amount' => $invoice->order->total_price,
         ]);
 
-        return redirect()->route('receipts.index')->with('success', 'Receipt created successfully.');
-    }
+        // Generate PDF
+        $pdf = Pdf::loadView('receipts.pdf', compact('receipt'));
+        $pdfContent = $pdf->output();
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(string $id)
-    {
-        //
+        // Kirim email ke customer dengan lampiran PDF
+        $customerEmail = $invoice->order->customer->email;
+        Mail::to($customerEmail)->send(new ReceiptMailable($receipt, $pdfContent));
+
+        return redirect()->route('receipts.index')->with('success', 'Receipt created and email sent successfully.');
     }
 
     /**
@@ -62,6 +64,7 @@ class ReceiptController extends Controller
      */
     public function edit(string $id)
     {
+        $receipt = Receipt::findOrFail($id);
         $invoices = Invoice::all();
         return view('receipts.edit', compact('receipt', 'invoices'));
     }
@@ -77,6 +80,7 @@ class ReceiptController extends Controller
             'amount' => 'required|integer|min:0',
         ]);
 
+        $receipt = Receipt::findOrFail($id);
         $receipt->update($validated);
 
         return redirect()->route('receipts.index')->with('success', 'Receipt updated successfully.');
@@ -87,13 +91,16 @@ class ReceiptController extends Controller
      */
     public function destroy(string $id)
     {
+        $receipt = Receipt::findOrFail($id);
         $receipt->delete();
         return redirect()->route('receipts.index')->with('success', 'Receipt deleted successfully.');
     }
 
+    /**
+     * Download receipt as PDF.
+     */
     public function download(Receipt $receipt)
     {
-        $invoice = $receipt->invoice->load('order.orderItems.product');
         $pdf = Pdf::loadView('receipts.pdf', compact('receipt'));
         return $pdf->download("Receipt_{$receipt->id}.pdf");
     }

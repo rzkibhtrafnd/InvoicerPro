@@ -8,7 +8,7 @@ use App\Models\Order;
 use App\Models\Customer;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\Mail;
-use App\Mail\InvoiceMailable; // Pastikan Anda sudah membuat Mailable ini
+use App\Mail\InvoiceMailable;
 
 class InvoiceController extends Controller
 {

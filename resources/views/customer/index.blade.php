@@ -1,77 +1,89 @@
-<x-app-layout>
-    <x-slot name="header">
-        <h2 class="fw-semibold fs-4 text-muted">
-            {{ __('Customers') }}
-        </h2>
-    </x-slot>
+@extends('layouts.app')
 
-    <div class="py-4">
-        <div class="container">
-            <div class="row justify-content-center">
-                <div class="col-12">
-                    <div class="card shadow-sm">
-                        <div class="card-body">
-                            <div class="row mb-3">
-                                <div class="col text-end">
-                                    <a href="{{ route('customers.create') }}" class="btn btn-primary">
-                                        {{ __('Add New Customer') }}
-                                    </a>
-                                </div>
-                            </div>
+@section('content')
+<div class="container mx-auto mt-8">
+    <div class="bg-white shadow-lg rounded-lg p-6">
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="text-2xl font-bold text-gray-800">Data Customers</h2>
+            <a href="{{ route('customers.create') }}" class="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600">
+                <i class="fas fa-plus"></i> Tambah Customer
+            </a>
+        </div>
 
-                            <!-- Customers Table -->
-                            <div class="table-responsive">
-                                <table class="table table-bordered table-hover">
-                                    <thead class="table-light">
-                                        <tr>
-                                            <th>{{ __('Name') }}</th>
-                                            <th>{{ __('Email') }}</th>
-                                            <th>{{ __('Phone') }}</th>
-                                            <th>{{ __('Address') }}</th>
-                                            <th class="text-center">{{ __('Actions') }}</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        @forelse ($customers as $customer)
-                                            <tr>
-                                                <td>{{ $customer->name }}</td>
-                                                <td>{{ $customer->email }}</td>
-                                                <td>{{ $customer->phone }}</td>
-                                                <td>{{ $customer->address }}</td>
-                                                <td class="text-center">
-                                                    <a href="{{ route('customers.edit', $customer) }}" class="btn btn-warning btn-sm">
-                                                        {{ __('Edit') }}
-                                                    </a>
-                                                    <form action="{{ route('customers.destroy', $customer) }}" method="POST" class="d-inline">
-                                                        @csrf
-                                                        @method('DELETE')
-                                                        <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('{{ __('Are you sure?') }}');">
-                                                            {{ __('Delete') }}
-                                                        </button>
-                                                    </form>
-                                                </td>
-                                            </tr>
-                                        @empty
-                                            <tr>
-                                                <td colspan="5" class="text-center text-muted">
-                                                    {{ __('No customers found.') }}
-                                                </td>
-                                            </tr>
-                                        @endforelse
-                                    </tbody>
-                                </table>
+        @if(session('success'))
+            <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4" role="alert">
+                <span>{{ session('success') }}</span>
+            </div>
+        @endif
 
-                                <!-- Enhanced Pagination Layout -->
-                                <div class="d-flex justify-content-between align-items-center mt-4">
-                                    <div>
-                                        {{ $customers->links('vendor.pagination.bootstrap-5') }}
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+                <thead>
+                    <tr class="bg-gray-100 border-b">
+                        <th class="px-4 py-2">No.</th>
+                        <th class="px-4 py-2">Nama</th>
+                        <th class="px-4 py-2">Email</th>
+                        <th class="px-4 py-2">Telepon</th>
+                        <th class="px-4 py-2">Alamat</th>
+                        <th class="px-4 py-2">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @forelse ($customers as $customer)
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-4 py-2 border-t">{{ $loop->iteration }}</td>
+                            <td class="px-4 py-2 border-t">{{ $customer->name }}</td>
+                            <td class="px-4 py-2 border-t">{{ $customer->email }}</td>
+                            <td class="px-4 py-2 border-t">{{ $customer->phone }}</td>
+                            <td class="px-4 py-2 border-t">{{ $customer->address }}</td>
+                            <td class="px-4 py-2 border-t flex space-x-2">
+                                <a href="{{ route('customers.edit', $customer) }}" class="bg-blue-500 text-white px-3 py-1 rounded-md hover:bg-blue-600">
+                                    Edit
+                                </a>
+                                <form action="{{ route('customers.destroy', $customer) }}" method="POST" onsubmit="return confirm('Yakin ingin menghapus customer ini?')">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="bg-red-500 text-white px-3 py-1 rounded-md hover:bg-red-600">
+                                        Hapus
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="6" class="text-center px-4 py-2 border-t">Tidak ada data customer.</td>
+                        </tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+
+        <div class="flex items-center justify-between border-t border-gray-200 bg-white px-4 py-3 sm:px-6 mt-4">
+            <div class="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
+                <p class="text-sm text-gray-700">
+                    Menampilkan
+                    <span class="font-medium">{{ $customers->firstItem() }}</span>
+                    hingga
+                    <span class="font-medium">{{ $customers->lastItem() }}</span>
+                    dari
+                    <span class="font-medium">{{ $customers->total() }}</span>
+                    entri
+                </p>
+                <div>
+                    <nav class="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
+                        <a href="{{ $customers->previousPageUrl() }}" class="relative inline-flex items-center px-2 py-2 text-gray-400 ring-1 ring-gray-300 ring-inset hover:bg-gray-50 focus:z-20 focus:outline-offset-0">
+                            &laquo;
+                        </a>
+                        @for ($i = 1; $i <= $customers->lastPage(); $i++)
+                            <a href="{{ $customers->url($i) }}" class="relative inline-flex items-center px-4 py-2 text-sm font-semibold {{ ($customers->currentPage() == $i) ? 'bg-indigo-600 text-white' : 'text-gray-900 ring-1 ring-gray-300 hover:bg-gray-50' }} focus:z-20 focus:outline-offset-0">{{ $i }}</a>
+                        @endfor
+                        <a href="{{ $customers->nextPageUrl() }}" class="relative inline-flex items-center px-2 py-2 text-gray-400 ring-1 ring-gray-300 ring-inset hover:bg-gray-50 focus:z-20 focus:outline-offset-0">
+                            &raquo;
+                        </a>
+                    </nav>
                 </div>
             </div>
         </div>
     </div>
-</x-app-layout>
+</div>
+@endsection
